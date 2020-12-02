@@ -1,0 +1,2 @@
+# gotkRedisManagerUI
+使用gotk开发的跨平台redis界面UI
