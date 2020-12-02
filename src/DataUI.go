@@ -5,7 +5,10 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+	_ "github.com/json-iterator/go"
 	"log"
+	_ "redisManager/redis"
+	redisUtil "redisManager/redis"
 )
 
 const (
@@ -61,11 +64,27 @@ func showDB(win *gtk.Window, treeView *gtk.TreeView) {
 	if err != nil {
 		log.Fatal("创建treeview失败:", err)
 	}
+
 	treeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
 	treeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
 	treeView.SetModel(treeStore)
+	iter1 = addTreeRow(treeStore, imageOK, "数据库0")
+
+	mp := redisUtil.buildDbStr("139.196.38.232:6379", "adminfeng@.", 0)
+	for key, value := range mp {
+		if value.value != "" {
+			iter2 = addSubRow(treeStore, iter1, imageOK, key)
+		} else {
+			for i := range value.list {
+				addSubRow(treeStore, iter2, imageOK, value.list[i])
+			}
+
+		}
+
+	}
+
 	// Add some rows to the tree store
-	iter1 = addTreeRow(treeStore, imageOK, "第一层")
+
 	iter2 = addSubRow(treeStore, iter1, imageOK, "第二层")
 	iter2 = addSubRow(treeStore, iter1, imageOK, "这是个有想法的值")
 	addSubRow(treeStore, iter2, imageOK, "什么人")
