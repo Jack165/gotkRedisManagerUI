@@ -2,25 +2,24 @@ package redisUtil
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-redis/redis/v8"
 	_ "strings"
 )
 
 type DataObj struct {
-	key   string
-	value string
-	list  []string
+	Key   string
+	Value string
+	List  []string
 }
 
 var ctx = context.Background()
 
-func main() {
+func test() {
 
-	fmt.Println(buildDbStr("139.196.38.232:6379", "adminfeng@.", 0))
+	//fmt.Println(buildDbStr("139.196.38.232:6379", "adminfeng@.", 0))
 }
 
-func buildDbStr(address, password string, db int) map[string]DataObj {
+func BuildDbStr(address, password string, db int) map[string]DataObj {
 
 	mp := make(map[string]DataObj)
 	//获取redis连接
@@ -43,7 +42,7 @@ func buildDbStr(address, password string, db int) map[string]DataObj {
 		key := val[i]
 
 		ss := DataObj{
-			key: key,
+			Key: key,
 		}
 		switch ts {
 
@@ -56,7 +55,7 @@ func buildDbStr(address, password string, db int) map[string]DataObj {
 				slice = append(slice, i)
 				listStr += "\"" + i + "\","
 			}
-			ss.list = slice
+			ss.List = slice
 			listStr = listStr[0 : len(listStr)-1]
 			listStr += "],"
 			resultStr += "\"" + key + "\"" + ":" + listStr
@@ -73,7 +72,7 @@ func buildDbStr(address, password string, db int) map[string]DataObj {
 			str = str[0 : len(str)-1]
 			str += "],"
 			resultStr += "\"" + key + "\"" + ":" + str
-			ss.list = setSlice
+			ss.List = setSlice
 			break
 		case "hash": //hash类型
 			hashStr := ""
@@ -94,7 +93,7 @@ func buildDbStr(address, password string, db int) map[string]DataObj {
 			}
 
 			resultStr += hashStr
-			ss.list = hashSlice
+			ss.List = hashSlice
 			break
 		case "zset":
 			zsetStr := "\"" + key + "\":["
@@ -108,13 +107,13 @@ func buildDbStr(address, password string, db int) map[string]DataObj {
 			zsetStr = zsetStr[0 : len(zsetStr)-1]
 			zsetStr += "],"
 			resultStr += zsetStr
-			ss.list = zsetSlice
+			ss.List = zsetSlice
 			break
 		default:
 
 			value := rdb.Get(ctx, key).Val()
 			resultStr += "\"" + key + "\"" + ":" + "\"" + value + "\","
-			ss.value = value
+			ss.Value = value
 		}
 		mp[key] = ss
 	}

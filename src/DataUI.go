@@ -2,13 +2,14 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	_ "github.com/json-iterator/go"
 	"log"
-	_ "redisManager/redis"
 	redisUtil "redisManager/redis"
+	"strings"
 )
 
 const (
@@ -22,6 +23,8 @@ var (
 )
 
 var textView *gtk.TextView = nil
+var data map[string]redisUtil.DataObj
+var keyMap map[string]string = make(map[string]string)
 
 func main() {
 
@@ -70,34 +73,56 @@ func showDB(win *gtk.Window, treeView *gtk.TreeView) {
 	treeView.SetModel(treeStore)
 	iter1 = addTreeRow(treeStore, imageOK, "数据库0")
 
-	mp := redisUtil.buildDbStr("139.196.38.232:6379", "adminfeng@.", 0)
-	for key, value := range mp {
-		if value.value != "" {
-			iter2 = addSubRow(treeStore, iter1, imageOK, key)
-		} else {
-			for i := range value.list {
-				addSubRow(treeStore, iter2, imageOK, value.list[i])
+	data = redisUtil.BuildDbStr("139.196.38.232:6379", "adminfeng@.", 0)
+	for key, value := range data {
+
+		if value.Value != "" {
+			strs := strings.Split(key, ":")
+			fmt.Print("字符串", strs)
+			if len(strs) > 1 {
+				iter2 = addSubRow(treeStore, iter1, imageOK, strs[0])
+				//fmt.Print("当前路径",path)
+				for i, v := range strs {
+					if v != "" && i > 0 {
+						trmp := addSubRow(treeStore, iter2, imageOK, v)
+
+						path, err := treeStore.ToTreeModel().GetPath(trmp)
+						if nil != err {
+							fmt.Print(err)
+						}
+						keyMap[path.String()] = key
+					}
+				}
+			} else {
+				path, _ := treeStore.ToTreeModel().GetPath(iter2)
+				keyMap[path.String()] = key
 			}
 
+		} else {
+			iter2 = addSubRow(treeStore, iter1, imageOK, key)
+			path, _ := treeStore.ToTreeModel().GetPath(iter2)
+			keyMap[path.String()] = key
 		}
 
 	}
 
 	// Add some rows to the tree store
+	/*
+		iter2 = addSubRow(treeStore, iter1, imageOK, "第二层")
+		iter2 = addSubRow(treeStore, iter1, imageOK, "这是个有想法的值")
+		addSubRow(treeStore, iter2, imageOK, "什么人")
+		addSubRow(treeStore, iter2, imageOK, "这是什么情况")
+		addSubRow(treeStore, iter2, imageOK, "哈哈哈")
+		iter2 = addSubRow(treeStore, iter1, imageOK, "优美的语言")
+		iter1 = addTreeRow(treeStore, imageOK, "新的一层")
+		iter2 = addSubRow(treeStore, iter1, imageOK, "值")
+		iter2 = addSubRow(treeStore, iter1, imageOK, "又是一个值")
+		iter2 = addSubRow(treeStore, iter1, imageOK, "还是一个值")
+		addSubRow(treeStore, iter2, imageOK, "这个值不会说")
+		addSubRow(treeStore, iter2, imageOK, "好说好说")
 
-	iter2 = addSubRow(treeStore, iter1, imageOK, "第二层")
-	iter2 = addSubRow(treeStore, iter1, imageOK, "这是个有想法的值")
-	addSubRow(treeStore, iter2, imageOK, "什么人")
-	addSubRow(treeStore, iter2, imageOK, "这是什么情况")
-	addSubRow(treeStore, iter2, imageOK, "哈哈哈")
-	iter2 = addSubRow(treeStore, iter1, imageOK, "优美的语言")
-	iter1 = addTreeRow(treeStore, imageOK, "新的一层")
-	iter2 = addSubRow(treeStore, iter1, imageOK, "值")
-	iter2 = addSubRow(treeStore, iter1, imageOK, "又是一个值")
-	iter2 = addSubRow(treeStore, iter1, imageOK, "还是一个值")
-	addSubRow(treeStore, iter2, imageOK, "这个值不会说")
-	addSubRow(treeStore, iter2, imageOK, "好说好说")
 
+	*/
 	selection, err := treeView.GetSelection()
 	if err != nil {
 		log.Fatal("不能获取选择的对象")
@@ -214,15 +239,30 @@ func treeSelectionChangedCB(selection *gtk.TreeSelection) {
 	var ok bool
 	model, iter, ok = selection.GetSelected()
 	if ok {
+
 		tpath, err := model.(*gtk.TreeModel).GetPath(iter)
 		if err != nil {
 			log.Printf("treeSelectionChangedCB:无法获取路径: %s\n", err)
 			return
 		}
-		valeu, _ := model.(*gtk.TreeModel).GetValue(iter, 1)
-		str, _ := valeu.GetString()
+		//fmt.Print("----------------------->",tpath)
+		kstr := keyMap[tpath.String()]
+		//valeu, _ := model.(*gtk.TreeModel).GetValue(iter, 1)
+		model.(*gtk.TreeModel).GetPath(iter)
+		//str, _ := valeu.GetString()
 		//log.Print(str)
 		//log.Printf("treeSelectionChangedCB: 选中的路径是: %s\n", tpath)
-		set_text_in_tview(textView, tpath.String()+":"+str)
+		value := data[kstr]
+		if value.Value != "" {
+			set_text_in_tview(textView, value.Key+":"+value.Value)
+		} else {
+			list := data[kstr].List
+			str := ""
+			for i := range list {
+				str += "," + list[i]
+			}
+			set_text_in_tview(textView, str)
+		}
+
 	}
 }
