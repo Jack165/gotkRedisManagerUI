@@ -1,12 +1,10 @@
-package Test
+package main
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	_ "github.com/json-iterator/go"
 	"log"
 	redisUtil "redisManager/redis"
 	"strings"
@@ -21,47 +19,27 @@ var (
 	imageOK   *gdk.Pixbuf = nil
 	imageFAIL *gdk.Pixbuf = nil
 )
-
 var textView *gtk.TextView = nil
+
 var data map[string]redisUtil.DataObj
+
 var keyMap map[string]string = make(map[string]string)
 
-func main() {
-
-	gtk.Init(nil)
-	var err error
-	imageOK, err = gdk.PixbufNewFromFile("reg.png")
-	errorCheck(err)
-
-	// 从glade中获取build对象
-	builder, err := gtk.BuilderNewFromFile("newRedis.glade")
-	errorCheck(err)
-
-	// 获取id是"mainWindows"的对象
-	obj, err := builder.GetObject("mainWindows")
-
-	errorCheck(err)
-	win, err := isWindow(obj)
-
-	treeObj, err := builder.GetObject("gtkTreeView")
-	errorCheck(err)
-	treeView, err := isTreeView(treeObj)
-	errorCheck(err)
-	textObject, err := builder.GetObject("gtkTextView")
-	textView, _ = isTextView(textObject)
-	buffer, err := textView.GetBuffer()
-	// start,end:= buffer.GetBounds()
-	// text,err:=buffer.GetText(start,end,true)
-	buffer.SetText("asdasldandjkanefonadfasdnfalsd;fna;lsdfnasdlfnasdkjfnas;fdnl")
-	//窗体销毁时调用的方法
-	win.Connect("destroy", func() {
-		gtk.MainQuit()
-	})
-	showDB(win, treeView)
-
+func setTextView(view *gtk.TextView) {
+	textView = view
+}
+func setData(redisData map[string]redisUtil.DataObj) {
+	data = redisData
+}
+func setKeyMap(redisKey map[string]string) {
+	keyMap = redisKey
 }
 
+/**
+刷新数据到UI上
+*/
 func showDB(win *gtk.Window, treeView *gtk.TreeView) {
+	imageOK, _ = gdk.PixbufNewFromFile("reg.png")
 	var iter1, iter2 *gtk.TreeIter
 	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
 	if err != nil {
@@ -105,24 +83,6 @@ func showDB(win *gtk.Window, treeView *gtk.TreeView) {
 		}
 
 	}
-
-	// Add some rows to the tree store
-	/*
-		iter2 = addSubRow(treeStore, iter1, imageOK, "第二层")
-		iter2 = addSubRow(treeStore, iter1, imageOK, "这是个有想法的值")
-		addSubRow(treeStore, iter2, imageOK, "什么人")
-		addSubRow(treeStore, iter2, imageOK, "这是什么情况")
-		addSubRow(treeStore, iter2, imageOK, "哈哈哈")
-		iter2 = addSubRow(treeStore, iter1, imageOK, "优美的语言")
-		iter1 = addTreeRow(treeStore, imageOK, "新的一层")
-		iter2 = addSubRow(treeStore, iter1, imageOK, "值")
-		iter2 = addSubRow(treeStore, iter1, imageOK, "又是一个值")
-		iter2 = addSubRow(treeStore, iter1, imageOK, "还是一个值")
-		addSubRow(treeStore, iter2, imageOK, "这个值不会说")
-		addSubRow(treeStore, iter2, imageOK, "好说好说")
-
-
-	*/
 	selection, err := treeView.GetSelection()
 	if err != nil {
 		log.Fatal("不能获取选择的对象")
@@ -134,56 +94,6 @@ func showDB(win *gtk.Window, treeView *gtk.TreeView) {
 	gtk.Main()
 }
 
-func isWindow(obj glib.IObject) (*gtk.Window, error) {
-	// Make type assertion (as per gtk.go).
-	if win, ok := obj.(*gtk.Window); ok {
-		return win, nil
-	}
-	return nil, errors.New("类型不是 *gtk.Window")
-}
-
-func isTreeView(obj glib.IObject) (*gtk.TreeView, error) {
-	// Make type assertion (as per gtk.go).
-	if win, ok := obj.(*gtk.TreeView); ok {
-		return win, nil
-	}
-	return nil, errors.New("该类型不是 *gtk.TreeView")
-}
-
-func isTextView(obj glib.IObject) (*gtk.TextView, error) {
-	// Make type assertion (as per gtk.go).
-	if win, ok := obj.(*gtk.TextView); ok {
-		return win, nil
-	}
-	return nil, errors.New("该类型不是 *gtk.TreeView")
-}
-
-func errorCheck(e error) {
-	if e != nil {
-		// panic for any errors.
-		log.Panic(e)
-	}
-}
-
-// Add a column to the tree view (during the initialization of the tree view)
-// We need to distinct the type of data shown in either column.
-func createTextColumn(title string, id int) *gtk.TreeViewColumn {
-	// In this column we want to show text, hence create a text renderer
-	cellRenderer, err := gtk.CellRendererTextNew()
-	if err != nil {
-		log.Fatal("无法创建text项:", err)
-	}
-
-	// Tell the renderer where to pick input from. Text renderer understands
-	// the "text" property.
-	column, err := gtk.TreeViewColumnNewWithAttribute(title, cellRenderer, "text", id)
-	if err != nil {
-		log.Fatal("无法创建列：", err)
-	}
-
-	return column
-}
-
 func createImageColumn(title string, id int) *gtk.TreeViewColumn {
 
 	cellRenderer, err := gtk.CellRendererPixbufNew()
@@ -193,6 +103,20 @@ func createImageColumn(title string, id int) *gtk.TreeViewColumn {
 	column, err := gtk.TreeViewColumnNewWithAttribute(title, cellRenderer, "pixbuf", id)
 	if err != nil {
 		log.Fatal("无法创建列:", err)
+	}
+
+	return column
+}
+
+func createTextColumn(title string, id int) *gtk.TreeViewColumn {
+	cellRenderer, err := gtk.CellRendererTextNew()
+	if err != nil {
+		log.Fatal("无法创建text项:", err)
+	}
+
+	column, err := gtk.TreeViewColumnNewWithAttribute(title, cellRenderer, "text", id)
+	if err != nil {
+		log.Fatal("无法创建列：", err)
 	}
 
 	return column
@@ -232,7 +156,6 @@ func get_buffer_from_tview(tv *gtk.TextView) *gtk.TextBuffer {
 	return buffer
 }
 
-// Handle selection
 func treeSelectionChangedCB(selection *gtk.TreeSelection) {
 	var iter *gtk.TreeIter
 	var model gtk.ITreeModel
