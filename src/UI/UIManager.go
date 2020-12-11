@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-redis/redis/v8"
+	_ "github.com/go-redis/redis/v8"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
@@ -21,24 +23,55 @@ var (
 )
 var textView *gtk.TextView = nil
 
+var redisClient *redis.Client
+
 var data map[string]redisUtil.DataObj
 
 var keyMap map[string]string = make(map[string]string)
 
-func setTextView(view *gtk.TextView) {
-	textView = view
+func flushKeys(treeView *gtk.TreeView, keys []string) {
+	treeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
+	treeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
+	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
+	if err != nil {
+		log.Fatal("创建treeview失败:", err)
+	}
+	treeView.SetModel(treeStore)
+	iter1 := addTreeRow(treeStore, imageOK, "数据库0")
+	for key, _ := range keys {
+		strs := strings.Split(keys[key], ":")
+		appendKeyTree(strs, keys[key], treeStore, iter1)
+	}
+	selection, err := treeView.GetSelection()
+	if err != nil {
+		log.Fatal("不能获取选择的对象")
+	}
+	selection.SetMode(gtk.SELECTION_SINGLE)
+	selection.Connect("changed", showValue)
+
 }
-func setData(redisData map[string]redisUtil.DataObj) {
-	data = redisData
-}
-func setKeyMap(redisKey map[string]string) {
-	keyMap = redisKey
+
+func appendKeyTree(keys []string, redisKey string, treeStore *gtk.TreeStore, iter *gtk.TreeIter) {
+	if len(keys) > 2 {
+		iter = addSubRow(treeStore, iter, imageOK, keys[0])
+		appendKeyTree(keys[1:len(keys)], redisKey, treeStore, iter)
+	} else {
+		var ter2 *gtk.TreeIter
+		if len(keys) > 1 {
+			ter2 = addSubRow(treeStore, iter, imageOK, keys[0]+":"+keys[1])
+		} else {
+			ter2 = addSubRow(treeStore, iter, imageOK, keys[0])
+		}
+
+		path, _ := treeStore.ToTreeModel().GetPath(ter2)
+		keyMap[path.String()] = redisKey
+	}
 }
 
 /**
 刷新数据到UI上
 */
-func showDB(win *gtk.Window, treeView *gtk.TreeView) {
+func showDB(win *gtk.ApplicationWindow, treeView *gtk.TreeView) {
 	imageOK, _ = gdk.PixbufNewFromFile("reg.png")
 	var iter1, iter2 *gtk.TreeIter
 	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
@@ -59,11 +92,9 @@ func showDB(win *gtk.Window, treeView *gtk.TreeView) {
 			fmt.Print("字符串", strs)
 			if len(strs) > 1 {
 				iter2 = addSubRow(treeStore, iter1, imageOK, strs[0])
-				//fmt.Print("当前路径",path)
 				for i, v := range strs {
 					if v != "" && i > 0 {
 						trmp := addSubRow(treeStore, iter2, imageOK, v)
-
 						path, err := treeStore.ToTreeModel().GetPath(trmp)
 						if nil != err {
 							fmt.Print(err)
@@ -89,9 +120,8 @@ func showDB(win *gtk.Window, treeView *gtk.TreeView) {
 	}
 	selection.SetMode(gtk.SELECTION_SINGLE)
 	selection.Connect("changed", treeSelectionChangedCB)
-
-	win.ShowAll()
-	gtk.Main()
+	//win.ShowAll()
+	//gtk.Main()
 }
 
 func createImageColumn(title string, id int) *gtk.TreeViewColumn {
@@ -154,6 +184,28 @@ func get_buffer_from_tview(tv *gtk.TextView) *gtk.TextBuffer {
 		log.Fatal("Unable to get buffer:", err)
 	}
 	return buffer
+}
+
+func showValue(selection *gtk.TreeSelection) {
+	var ok bool
+	var iter *gtk.TreeIter
+	var model gtk.ITreeModel
+	model, iter, ok = selection.GetSelected()
+	if ok {
+
+		tpath, err := model.(*gtk.TreeModel).GetPath(iter)
+		if err != nil {
+			log.Printf("treeSelectionChangedCB:无法获取路径: %s\n", err)
+			return
+		}
+		redisKey := keyMap[tpath.String()]
+		if redisKey != "" {
+			text := redisUtil.GetRedisValue(redisKey, redisClient)
+
+			set_text_in_tview(textView, text)
+		}
+
+	}
 }
 
 func treeSelectionChangedCB(selection *gtk.TreeSelection) {

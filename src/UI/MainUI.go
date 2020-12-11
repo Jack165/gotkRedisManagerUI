@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
+	_ "github.com/go-redis/redis/v8"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
 	"os"
+	redisUtil "redisManager/redis"
 )
 
 const appId = "com.feng.RedisManager"
@@ -31,12 +33,20 @@ func main() {
 
 		obj, err := builder.GetObject("mainWindows")
 		errorCheck(err)
-
+		treeObj, err := builder.GetObject("gtkTreeView")
+		errorCheck(err)
+		treeView, err := isTreeView(treeObj)
 		win, err := isWindow(obj)
 		errorCheck(err)
-
+		textObject, err := builder.GetObject("gtkTextView")
+		textView, _ = isTextView(textObject)
 		win.Show()
 		application.AddWindow(win)
+		rdb := redisUtil.GetRedisDb("139.196.38.232:6379", "adminfeng@.", 0)
+		redisClient = rdb
+		keys := redisUtil.KeyList(rdb)
+		flushKeys(treeView, keys)
+		//showDB(win,treeView)
 	})
 
 	application.Connect("shutdown", func() {
@@ -50,15 +60,26 @@ func onMainWindowDestroy() {
 }
 func errorCheck(e error) {
 	if e != nil {
-		// panic for any errors.
 		log.Panic(e)
 	}
 }
 
 func isWindow(obj glib.IObject) (*gtk.ApplicationWindow, error) {
-	// Make type assertion (as per gtk.go).
 	if win, ok := obj.(*gtk.ApplicationWindow); ok {
 		return win, nil
 	}
 	return nil, errors.New("not a *gtk.ApplicationWindow")
+}
+func isTreeView(obj glib.IObject) (*gtk.TreeView, error) {
+	if win, ok := obj.(*gtk.TreeView); ok {
+		return win, nil
+	}
+	return nil, errors.New("该类型不是 *gtk.TreeView")
+}
+
+func isTextView(obj glib.IObject) (*gtk.TextView, error) {
+	if win, ok := obj.(*gtk.TextView); ok {
+		return win, nil
+	}
+	return nil, errors.New("该类型不是 *gtk.TreeView")
 }
