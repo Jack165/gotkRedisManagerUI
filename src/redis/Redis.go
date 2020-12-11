@@ -38,6 +38,12 @@ func KeyList(rdb *redis.Client) []string {
 	return val
 }
 
+func GetDbList(rdb *redis.Client) int64 {
+	keysize := rdb.DBSize(ctx)
+
+	return keysize.Val()
+}
+
 func GetRedisValue(key string, rdb *redis.Client) string {
 	//获取key对应值的的类型
 	valuetype := rdb.Type(ctx, key)
