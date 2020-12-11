@@ -6,4 +6,5 @@ require (
 	github.com/go-redis/redis/v8 v8.4.0
 	github.com/gotk3/gotk3 v0.5.1
 	github.com/json-iterator/go v1.1.10
+	golang.org/x/text v0.3.3
 )

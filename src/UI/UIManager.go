@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-redis/redis/v8"
 	"github.com/gotk3/gotk3/gdk"
@@ -27,14 +26,18 @@ var redisClient *redis.Client
 
 var data map[string]redisUtil.DataObj
 
-var keyMap map[string]string = make(map[string]string)
+var keyMap = make(map[string]string)
 
+/**
+重新加载所以的key列表
+*/
 func flushKeys(treeView *gtk.TreeView, keys []string) {
+	imageOK, _ = gdk.PixbufNewFromFile("reg.png")
 	treeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
 	treeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
 	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
 	if err != nil {
-		log.Fatal("创建treeview失败:", err)
+		log.Fatal("创建treeView失败:", err)
 	}
 	treeView.SetModel(treeStore)
 	iter1 := addTreeRow(treeStore, imageOK, "数据库0")
@@ -62,68 +65,12 @@ func appendKeyTree(keys []string, redisKey string, treeStore *gtk.TreeStore, ite
 		} else {
 			ter2 = addSubRow(treeStore, iter, imageOK, keys[0])
 		}
-
 		path, _ := treeStore.ToTreeModel().GetPath(ter2)
 		keyMap[path.String()] = redisKey
 	}
 }
 
-/**
-刷新数据到UI上
-*/
-func showDB(win *gtk.ApplicationWindow, treeView *gtk.TreeView) {
-	imageOK, _ = gdk.PixbufNewFromFile("reg.png")
-	var iter1, iter2 *gtk.TreeIter
-	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
-	if err != nil {
-		log.Fatal("创建treeview失败:", err)
-	}
-
-	treeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
-	treeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
-	treeView.SetModel(treeStore)
-	iter1 = addTreeRow(treeStore, imageOK, "数据库0")
-
-	data = redisUtil.BuildDbStr("139.196.38.232:6379", "adminfeng@.", 0)
-	for key, value := range data {
-
-		if value.Value != "" {
-			strs := strings.Split(key, ":")
-			fmt.Print("字符串", strs)
-			if len(strs) > 1 {
-				iter2 = addSubRow(treeStore, iter1, imageOK, strs[0])
-				for i, v := range strs {
-					if v != "" && i > 0 {
-						trmp := addSubRow(treeStore, iter2, imageOK, v)
-						path, err := treeStore.ToTreeModel().GetPath(trmp)
-						if nil != err {
-							fmt.Print(err)
-						}
-						keyMap[path.String()] = key
-					}
-				}
-			} else {
-				path, _ := treeStore.ToTreeModel().GetPath(iter2)
-				keyMap[path.String()] = key
-			}
-
-		} else {
-			iter2 = addSubRow(treeStore, iter1, imageOK, key)
-			path, _ := treeStore.ToTreeModel().GetPath(iter2)
-			keyMap[path.String()] = key
-		}
-
-	}
-	selection, err := treeView.GetSelection()
-	if err != nil {
-		log.Fatal("不能获取选择的对象")
-	}
-	selection.SetMode(gtk.SELECTION_SINGLE)
-	selection.Connect("changed", treeSelectionChangedCB)
-	//win.ShowAll()
-	//gtk.Main()
-}
-
+//创建treeView泰坦
 func createImageColumn(title string, id int) *gtk.TreeViewColumn {
 
 	cellRenderer, err := gtk.CellRendererPixbufNew()
@@ -175,11 +122,17 @@ func addSubRow(treeStore *gtk.TreeStore, iter *gtk.TreeIter, icon *gdk.Pixbuf, t
 }
 func set_text_in_tview(tv *gtk.TextView, text string) {
 	buffer := get_buffer_from_tview(tv)
+
+	//data, _ := ioutil.ReadAll(transform.NewReader(bytes.NewReader([]byte(text)), simplifiedchinese.GBK.NewEncoder()))
+	//bs:=[]byte(text)
+
 	buffer.SetText(text)
+
 }
 
 func get_buffer_from_tview(tv *gtk.TextView) *gtk.TextBuffer {
 	buffer, err := tv.GetBuffer()
+
 	if err != nil {
 		log.Fatal("Unable to get buffer:", err)
 	}
@@ -203,40 +156,6 @@ func showValue(selection *gtk.TreeSelection) {
 			text := redisUtil.GetRedisValue(redisKey, redisClient)
 
 			set_text_in_tview(textView, text)
-		}
-
-	}
-}
-
-func treeSelectionChangedCB(selection *gtk.TreeSelection) {
-	var iter *gtk.TreeIter
-	var model gtk.ITreeModel
-	var ok bool
-	model, iter, ok = selection.GetSelected()
-	if ok {
-
-		tpath, err := model.(*gtk.TreeModel).GetPath(iter)
-		if err != nil {
-			log.Printf("treeSelectionChangedCB:无法获取路径: %s\n", err)
-			return
-		}
-		//fmt.Print("----------------------->",tpath)
-		kstr := keyMap[tpath.String()]
-		//valeu, _ := model.(*gtk.TreeModel).GetValue(iter, 1)
-		model.(*gtk.TreeModel).GetPath(iter)
-		//str, _ := valeu.GetString()
-		//log.Print(str)
-		//log.Printf("treeSelectionChangedCB: 选中的路径是: %s\n", tpath)
-		value := data[kstr]
-		if value.Value != "" {
-			set_text_in_tview(textView, value.Key+":"+value.Value)
-		} else {
-			list := data[kstr].List
-			str := ""
-			for i := range list {
-				str += "," + list[i]
-			}
-			set_text_in_tview(textView, str)
 		}
 
 	}

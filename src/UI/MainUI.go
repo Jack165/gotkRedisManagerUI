@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	_ "github.com/go-redis/redis/v8"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"log"
@@ -15,7 +16,7 @@ const appId = "com.feng.RedisManager"
 func main() {
 	application, err := gtk.ApplicationNew(appId, glib.APPLICATION_FLAGS_NONE)
 	errorCheck(err)
-
+	imageOK, err = gdk.PixbufNewFromFile("redis.jfif")
 	application.Connect("startup", func() {
 		log.Println("application startup")
 	})
@@ -40,6 +41,8 @@ func main() {
 		errorCheck(err)
 		textObject, err := builder.GetObject("gtkTextView")
 		textView, _ = isTextView(textObject)
+		win.SetTitle("RedisManager")
+		win.SetIcon(imageOK)
 		win.Show()
 		application.AddWindow(win)
 		rdb := redisUtil.GetRedisDb("139.196.38.232:6379", "adminfeng@.", 0)

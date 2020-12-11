@@ -29,6 +29,7 @@
           <object class="GtkTextView" id="gtkTextView">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
+            <property name="wrap-mode">char</property>
           </object>
           <packing>
             <property name="resize">True</property>

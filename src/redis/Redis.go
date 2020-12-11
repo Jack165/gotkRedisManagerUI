@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis/v8"
 	_ "strings"
+	"unicode"
 )
 
 type DataObj struct {
@@ -111,15 +112,20 @@ func GetRedisValue(key string, rdb *redis.Client) string {
 		ss.List = zsetSlice
 		break
 	default:
-
 		value := rdb.Get(ctx, key).Val()
-		resultStr += "\"" + key + "\"" + ":" + "\"" + value + "\","
-		ss.Value = value
+		s2 := []rune(value)
+		resultStr += "\"" + key + "\"" + ":" + "\"" + string(s2) + "\","
+		ss.Value = string(s2)
 	}
 	resultStr = resultStr[0:len(resultStr)-1] + "}"
 	return resultStr
 }
-
+func chr(r rune) rune {
+	if r >= 0 && r <= unicode.MaxASCII {
+		return r
+	}
+	return unicode.ReplacementChar
+}
 func BuildDbStr(address, password string, db int) map[string]DataObj {
 
 	mp := make(map[string]DataObj)
