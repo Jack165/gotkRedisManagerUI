@@ -68,7 +68,21 @@
           </packing>
         </child>
         <child>
-          <object class="GtkComboBox" id="checkDb">
+                  <object class="GtkButton" id="btnDetail">
+                    <property name="label" translatable="yes">查看数据</property>
+                    <property name="width-request">100</property>
+                    <property name="height-request">35</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                  </object>
+                  <packing>
+                    <property name="x">350</property>
+                    <property name="y">370</property>
+                  </packing>
+                </child>
+        <child>
+          <object class="GtkComboBoxText" id="checkDb">
             <property name="width-request">100</property>
             <property name="height-request">35</property>
             <property name="visible">True</property>

@@ -3,6 +3,8 @@ package redisUtil
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"strconv"
+	"strings"
 	_ "strings"
 	"unicode"
 )
@@ -29,8 +31,23 @@ func GetRedisDb(address, password string, db int) *redis.Client {
 	return rdb
 }
 
+func GetDbSize(rdb *redis.Client) int {
+
+	str := rdb.ConfigGet(ctx, "databases").String()
+	ls := strings.Fields(str)
+	for s := range ls {
+		sr := ls[s]
+		if strings.Contains(sr, "]") {
+			new := strings.ReplaceAll(sr, "]", "")
+			num, _ := strconv.Atoi(new)
+			return num
+		}
+
+	}
+	return 0
+}
 func KeyList(rdb *redis.Client) []string {
-	rdb.ConfigGet(ctx, "databases").Val()
+	//str:= rdb.ConfigGet(ctx, "databases").String()
 	//获取key的数量
 	keysize := rdb.DBSize(ctx)
 	//获取所有key的值，游标设置0

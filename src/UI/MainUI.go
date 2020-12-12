@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/go-redis/redis/v8"
 	"github.com/gotk3/gotk3/gdk"
@@ -11,6 +10,7 @@ import (
 	"log"
 	"os"
 	redisUtil "redisManager/redis"
+	"strconv"
 )
 
 const appId = "com.feng.RedisManager"
@@ -18,6 +18,16 @@ const appId = "com.feng.RedisManager"
 var rdb *redis.Client
 var urlText *gtk.Entry
 var pwdText *gtk.Entry
+var comboBox *gtk.ComboBoxText
+var win *gtk.ApplicationWindow
+
+var connet link
+
+type link struct {
+	name string
+	url  string
+	pwd  string
+}
 
 func main() {
 	showMain()
@@ -45,17 +55,29 @@ func showMain() {
 
 		obj, err := builder.GetObject("gtkAppWindow")
 		errorCheck(err)
-		win, _ := isWindow(obj)
+		win, _ = isWindow(obj)
 		btnLoginObj, err := builder.GetObject("btnLogin")
 		errorCheck(err)
 		btn, err := isButton(btnLoginObj)
 		btn.Connect("clicked", loginBtnClicked)
+		btnDetailObj, err := builder.GetObject("btnDetail")
+		errorCheck(err)
+		btnShowDb, err := isButton(btnDetailObj)
+		btnShowDb.Connect("clicked", showDbDetail)
+
 		errorCheck(err)
 		txtUrl, err := builder.GetObject("entryUrl")
 		urlText, _ = isEntry(txtUrl)
+		urlText.SetText("139.196.38.232:6379")
 		txtPwd, err := builder.GetObject("entryPwd")
 		pwdText, _ = isEntry(txtPwd)
-		rdb := redisUtil.GetRedisDb("139.196.38.232:6379", "adminfeng@.", 0)
+		pwdText.SetText("adminfeng@.")
+		gtkComboBoxObj, err := builder.GetObject("checkDb")
+		errorCheck(err)
+		comboBox, err = isComboBox(gtkComboBoxObj)
+		errorCheck(err)
+		//rdb := redisUtil.GetRedisDb("139.196.38.232:6379", "adminfeng@.", 0)
+		rdb := redisUtil.GetRedisDb(connet.url, connet.pwd, comboBox.GetActive())
 		redisClient = rdb
 		win.SetTitle("RedisManager")
 		win.SetIcon(imageOK)
@@ -70,6 +92,9 @@ func showMain() {
 }
 
 func showDB() {
+	db, _ := strconv.Atoi(comboBox.GetActiveText())
+	rdb := redisUtil.GetRedisDb(connet.url, connet.pwd, db)
+	redisClient = rdb
 	application, err := gtk.ApplicationNew(appId, glib.APPLICATION_FLAGS_NONE)
 	errorCheck(err)
 	imageOK, err = gdk.PixbufNewFromFile("redis.jfif")
@@ -89,39 +114,57 @@ func showDB() {
 		builder.ConnectSignals(signals)
 
 		obj, err := builder.GetObject("mainWindows")
+		detailWin, err := isWindow(obj)
 		errorCheck(err)
 		treeObj, err := builder.GetObject("gtkTreeView")
 		errorCheck(err)
 		treeView, err := isTreeView(treeObj)
-		win, err := isWindow(obj)
 		errorCheck(err)
 		textObject, err := builder.GetObject("gtkTextView")
 		textView, _ = isTextView(textObject)
-		win.SetTitle("RedisManager")
-		win.SetIcon(imageOK)
-		win.Show()
+		detailWin.SetTitle("RedisManager-数据库" + comboBox.GetActiveText())
+		detailWin.SetIcon(imageOK)
+		detailWin.Show()
 		application.AddWindow(win)
 
 		keys := redisUtil.KeyList(rdb)
 		flushKeys(treeView, keys)
-		//showDB(win,treeView)
+
 	})
 
 	application.Connect("shutdown", func() {
 		log.Println("application shutdown")
 	})
-
-	os.Exit(application.Run(os.Args))
+	application.Run(os.Args)
+	//os.Exit()
 }
 
 func loginBtnClicked() {
 	url, _ := urlText.GetText()
 	pwd, _ := pwdText.GetText()
+	connet.url = url
+	connet.pwd = pwd
+
 	rdb = redisUtil.GetRedisDb(url, pwd, 0)
-	size := redisUtil.GetDbList(rdb)
-	if size > 0 {
-		fmt.Print(size)
+	dbSize := redisUtil.GetDbSize(rdb)
+	var texts = make([]string, dbSize)
+	for i := 0; i < dbSize; i++ {
+		texts[i] = strconv.Itoa(i)
 	}
+	boxCom(texts)
+}
+
+func showDbDetail() {
+	showDB()
+}
+
+func boxCom(text []string) {
+	for i := 0; i < len(text); i++ {
+		num := text[i]
+		comboBox.AppendText(num)
+	}
+	comboBox.SetActive(0)
+
 }
 
 func onMainWindowDestroy() {
@@ -164,4 +207,10 @@ func isEntry(obj glib.IObject) (*gtk.Entry, error) {
 		return entry, nil
 	}
 	return nil, errors.New("该类型不是 *gtk.TreeView")
+}
+func isComboBox(obj glib.IObject) (*gtk.ComboBoxText, error) {
+	if entry, ok := obj.(*gtk.ComboBoxText); ok {
+		return entry, nil
+	}
+	return nil, errors.New("该类型不是 *gtk.ComboBox")
 }

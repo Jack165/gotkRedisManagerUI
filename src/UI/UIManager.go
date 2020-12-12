@@ -40,7 +40,7 @@ func flushKeys(treeView *gtk.TreeView, keys []string) {
 		log.Fatal("创建treeView失败:", err)
 	}
 	treeView.SetModel(treeStore)
-	iter1 := addTreeRow(treeStore, imageOK, "数据库0")
+	iter1 := addTreeRow(treeStore, imageOK, "数据库")
 	for key, _ := range keys {
 		strs := strings.Split(keys[key], ":")
 		appendKeyTree(strs, keys[key], treeStore, iter1)
