@@ -21,7 +21,7 @@ var (
 	imageFAIL *gdk.Pixbuf = nil
 )
 var textView *gtk.TextView = nil
-
+var keyTreeView *gtk.TreeView
 var redisClient *redis.Client
 
 var data map[string]redisUtil.DataObj
@@ -32,19 +32,22 @@ var keyMap = make(map[string]string)
 重新加载所以的key列表
 */
 func flushKeys(treeView *gtk.TreeView, keys []string) {
+	keyTreeView = treeView
 	imageOK, _ = gdk.PixbufNewFromFile("reg.png")
-	treeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
-	treeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
+	keyTreeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
+	keyTreeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
 	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
 	if err != nil {
 		log.Fatal("创建treeView失败:", err)
 	}
-	treeView.SetModel(treeStore)
+	keyTreeView.SetModel(treeStore)
 	iter1 := addTreeRow(treeStore, imageOK, "数据库")
 	for key, _ := range keys {
 		strs := strings.Split(keys[key], ":")
 		appendKeyTree(strs, keys[key], treeStore, iter1)
 	}
+	//keyTreeView.ExpandAll()
+
 	selection, err := treeView.GetSelection()
 	if err != nil {
 		log.Fatal("不能获取选择的对象")
@@ -152,9 +155,9 @@ func showValue(selection *gtk.TreeSelection) {
 			return
 		}
 		redisKey := keyMap[tpath.String()]
+		keyTreeView.ExpandRow(tpath, false)
 		if redisKey != "" {
 			text := redisUtil.GetRedisValue(redisKey, redisClient)
-
 			set_text_in_tview(textView, text)
 		}
 

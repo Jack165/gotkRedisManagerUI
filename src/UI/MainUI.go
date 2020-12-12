@@ -71,6 +71,8 @@ func showMain() {
 		urlText.SetText("139.196.38.232:6379")
 		txtPwd, err := builder.GetObject("entryPwd")
 		pwdText, _ = isEntry(txtPwd)
+		pwdText.SetVisibility(false)
+		pwdText.SetInvisibleChar('*')
 		pwdText.SetText("adminfeng@.")
 		gtkComboBoxObj, err := builder.GetObject("checkDb")
 		errorCheck(err)
@@ -81,6 +83,7 @@ func showMain() {
 		redisClient = rdb
 		win.SetTitle("RedisManager")
 		win.SetIcon(imageOK)
+
 		win.Show()
 		application.AddWindow(win)
 	})
