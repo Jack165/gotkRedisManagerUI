@@ -37,15 +37,17 @@ func main() {
 func showMain() {
 	application, err := gtk.ApplicationNew(appId, glib.APPLICATION_FLAGS_NONE)
 	errorCheck(err)
-	imageOK, err = gdk.PixbufNewFromFile("redis.jfif")
+
+	imageOK, err = gdk.PixbufNewFromFile("Resource/redis.jfif")
 	errorCheck(err)
 	application.Connect("startup", func() {
+
 		log.Println("application startup")
 	})
 	application.Connect("activate", func() {
 		log.Println("application activate")
 
-		builder, err := gtk.BuilderNewFromFile("UI/selectDB.glade")
+		builder, err := gtk.BuilderNewFromFile("Resource/selectDB.glade")
 		errorCheck(err)
 
 		signals := map[string]interface{}{
@@ -95,12 +97,14 @@ func showMain() {
 }
 
 func showDB() {
+
 	db, _ := strconv.Atoi(comboBox.GetActiveText())
 	rdb := redisUtil.GetRedisDb(connet.url, connet.pwd, db)
 	redisClient = rdb
 	application, err := gtk.ApplicationNew(appId, glib.APPLICATION_FLAGS_NONE)
 	errorCheck(err)
-	imageOK, err = gdk.PixbufNewFromFile("redis.jfif")
+	imageOK, err = gdk.PixbufNewFromFile("Resource/redis.jfif")
+
 	application.Connect("startup", func() {
 		log.Println("application startup")
 	})
@@ -108,7 +112,7 @@ func showDB() {
 	application.Connect("activate", func() {
 		log.Println("application activate")
 
-		builder, err := gtk.BuilderNewFromFile("UI/newRedis.glade")
+		builder, err := gtk.BuilderNewFromFile("Resource/newRedis.glade")
 		errorCheck(err)
 
 		signals := map[string]interface{}{
@@ -151,6 +155,7 @@ func loginBtnClicked() {
 	rdb = redisUtil.GetRedisDb(url, pwd, 0)
 	dbSize := redisUtil.GetDbSize(rdb)
 	var texts = make([]string, dbSize)
+	comboBox.RemoveAll()
 	for i := 0; i < dbSize; i++ {
 		texts[i] = strconv.Itoa(i)
 	}

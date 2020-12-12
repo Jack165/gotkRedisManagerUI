@@ -33,7 +33,7 @@ var keyMap = make(map[string]string)
 */
 func flushKeys(treeView *gtk.TreeView, keys []string) {
 	keyTreeView = treeView
-	imageOK, _ = gdk.PixbufNewFromFile("reg.png")
+	imageOK, _ = gdk.PixbufNewFromFile("Resource/reg.png")
 	keyTreeView.AppendColumn(createImageColumn("图标", COLUMN_ICON))
 	keyTreeView.AppendColumn(createTextColumn("内容", COLUMN_TEXT))
 	treeStore, err := gtk.TreeStoreNew(glib.TYPE_OBJECT, glib.TYPE_STRING)
