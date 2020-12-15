@@ -64,8 +64,15 @@ func appendKeyTree(keys []string, redisKey string, treeStore *gtk.TreeStore, ite
 	} else {
 		var ter2 *gtk.TreeIter
 		if len(keys) > 1 {
+			lens := len(keys[0]) + len(keys[1])
+			if 20 < lens {
+				appendKeyTree(keys[1:len(keys)], redisKey, treeStore, iter)
+			}
 			ter2 = addSubRow(treeStore, iter, imageOK, keys[0]+":"+keys[1])
 		} else {
+			if len(keys[0]) > 20 {
+				keys[0] = keys[0][len(keys[0])-20 : len(keys[0])]
+			}
 			ter2 = addSubRow(treeStore, iter, imageOK, keys[0])
 		}
 		path, _ := treeStore.ToTreeModel().GetPath(ter2)

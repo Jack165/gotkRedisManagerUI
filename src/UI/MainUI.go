@@ -101,7 +101,7 @@ func showDB() {
 	db, _ := strconv.Atoi(comboBox.GetActiveText())
 	rdb := redisUtil.GetRedisDb(connet.url, connet.pwd, db)
 	redisClient = rdb
-	application, err := gtk.ApplicationNew(appId, glib.APPLICATION_FLAGS_NONE)
+	application, err := gtk.ApplicationNew("com.feng.RedisManager.detail"+strconv.Itoa(db), glib.APPLICATION_FLAGS_NONE)
 	errorCheck(err)
 	imageOK, err = gdk.PixbufNewFromFile("Resource/redis.jfif")
 
